@@ -271,7 +271,7 @@ def parse_components(msg):
                         cc['sf'] = c.params['sf']
                         cc['val'] = next((f['val'] for f in fields if f['sf'] == c.params['sf']), None)
                     elif 'key' in c.params:
-                        cc['key'] = i.params['key']
+                        cc['key'] = c.params['key']
                         cc['val'] = next((f['val'] for f in fields if f['key'] == c.params['key']), None)
                     else:
                         cc['val'] = next((f['val'] for f in fields if ('key' not in f and 'sf' not in f)), None)
@@ -300,16 +300,16 @@ def parse_components(msg):
     # process the body
     body = p.recv_body()
     if body:
-        response['body'] = body
+        response['body'] = body.decode('utf-8')
 
     return response
     
 def add_content_digest(components, alg='sha-512'):
     if 'body' in components:
         if alg == 'sha-512':
-            h = SHA512.new(components['body'])
+            h = SHA512.new(components['body'].encode('utf-8'))
         elif alg == 'sha-256':
-            h = SHA256.new(components['body'])
+            h = SHA256.new(components['body'].encode('utf-8'))
         else:
             # unknown alg, skip it
             return components
@@ -430,7 +430,7 @@ def generate_input(components, coveredComponents, params, related = []):
     
     response = {
         'signatureInput': base,
-        'signatureParams': sigparams
+        'signatureParams': str(sigparams)
     }
     
     return response
