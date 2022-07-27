@@ -269,10 +269,10 @@ def parse_components(msg):
                     fields = (f for f in response['fields'] if f['id'] == cc['id'])
                     if 'sf' in c.params:
                         cc['sf'] = c.params['sf']
-                        cc['val'] = next((f['val'] for f in fields if f['sf'] == c.params['sf']), None)
+                        cc['val'] = next((f['val'] for f in fields if 'sf' in f and f['sf'] == c.params['sf']), None)
                     elif 'key' in c.params:
                         cc['key'] = c.params['key']
-                        cc['val'] = next((f['val'] for f in fields if f['key'] == c.params['key']), None)
+                        cc['val'] = next((f['val'] for f in fields if 'key' in f and f['key'] == c.params['key']), None)
                     else:
                         cc['val'] = next((f['val'] for f in fields if ('key' not in f and 'sf' not in f)), None)
                 else:
