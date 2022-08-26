@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="httpsigpy",
-    version="0.0.4",
+    version="0.0.6",
     author="Justin Richer",
     author_email="python@justin.richer.org",
     description="HTTP Message Signatures",

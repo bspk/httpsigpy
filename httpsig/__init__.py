@@ -93,7 +93,7 @@ structuredFields = {
     "cdn-cache-control": "dict"
 }
 
-def parse_components(msg):
+def parse_components(msg, req = False):
     p = HttpParser()
     p.execute(msg, len(msg))
     
@@ -102,13 +102,13 @@ def parse_components(msg):
     response['fields'] = []
     for h in p.get_headers():
         cid = http_sfv.Item(h.lower())
-        response['fields'].append(
-            {
-                'id': cid.value,
-                'cid': str(cid),
-                'val': p.get_headers()[h] # Note: this normalizes the header value for us
-            }
-        )
+        f = {
+            'id': cid.value,
+            'cid': str(cid),
+            'val': p.get_headers()[h] # Note: this normalizes the header value for us
+        }
+        response['fields'].append(f)
+
         # see if this is a known structured field
         if h and h.lower() in structuredFields:
             if structuredFields[h.lower()] == 'dict':
@@ -118,53 +118,60 @@ def parse_components(msg):
                 for k in sv:
                     cid = http_sfv.Item(h.lower())
                     cid.params['key'] = k
-                    response['fields'].append(
-                        {
+                    f = {
                             'id': cid.value,
                             'cid': str(cid),
                             'key': k,
                             'val': str(sv[k])
-                        }
-                    )
+                    }
+                    response['fields'].append(f)
             
                 cid = http_sfv.Item(h.lower())
                 cid.params['sf'] = True
-                response['fields'].append(
-                    {
+                f = {
                         'id': cid.value,
                         'cid': str(cid),
                         'sf': True,
                         'val': str(sv)
-                    }
-                )
+                }
+                response['fields'].append(f)
+                
             elif structuredFields[h.lower()] == 'list':
                 sv = http_sfv.List()
                 sv.parse(p.get_headers()[h].encode('utf-8'))
             
                 cid = http_sfv.Item(h.lower())
                 cid.params['sf'] = True
-                response['fields'].append(
-                    {
+                f = {
                         'id': cid.value,
                         'cid': str(cid),
                         'sf': True,
                         'val': str(sv)
-                    }
-                )
+                }
+                response['fields'].append(f)
+                
             elif structuredFields[h.lower()] == 'item':
                 sv = http_sfv.Item()
                 sv.parse(p.get_headers()[h].encode('utf-8'))
         
                 cid = http_sfv.Item(h.lower())
                 cid.params['sf'] = True
-                response['fields'].append(
-                    {
+                f = {
                         'id': cid.value,
                         'cid': str(cid),
                         'sf': True,
                         'val': str(sv)
-                    }
-                )
+                }
+                response['fields'].append(f)
+
+    if req:
+        for f in response['fields']:
+            i = http_sfv.Item()
+            i.parse(f['cid'].encode('utf-8'))
+            i.params['req'] = True
+            f['req'] = True
+            f['cid'] = str(i)
+
 
     if p.get_status_code():
         # response
@@ -246,6 +253,14 @@ def parse_components(msg):
                             'idx': i
                         }
                     )
+        
+        if req:
+            for d in response['derived']:
+                i = http_sfv.Item()
+                i.parse(d['cid'].encode('utf-8'))
+                i.params['req'] = True
+                d['req'] = True
+                d['cid'] = str(i)
 
     if 'signature-input' in p.get_headers():
         # existing signatures, parse the values
@@ -354,7 +369,7 @@ def add_content_digest(components, alg='sha-512'):
     else:
         return components
 
-def generate_input(components, coveredComponents, params, related = []):
+def generate_base(components, coveredComponents, params, related = []):
     sigparams = http_sfv.InnerList()
     base = ''
 
