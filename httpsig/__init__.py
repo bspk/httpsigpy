@@ -5,7 +5,7 @@ except ImportError:
     from http_parser.pyparser import HttpParser
 
 import http_sfv
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, quote
 import base64
 from Cryptodome.Signature import pss
 from Cryptodome.Signature import pkcs1_15
@@ -228,6 +228,7 @@ def parse_components(msg, req = False):
         qs = parse_qs(p.get_query_string())
         for q in qs:
             v = qs[q]
+            # multiple values are undefined
             if len(v) == 1:
                 cid = http_sfv.Item('@query-param')
                 cid.params['name'] = q
@@ -236,24 +237,10 @@ def parse_components(msg, req = False):
                         'id': cid.value,
                         'cid': str(cid),
                         'name': q,
-                        'val': v[0]
+                        'val': quote(v[0].encode('utf-8')) # value is the quoted version, after parsing
                     }
                 )
-            elif len(v) > 1:
-                # Multiple values, undefined behavior?
-                for i in range(len(v)):
-                    cid = http_sfv.Item('@query-param')
-                    cid.params['name'] = q
-                    response['derived'].append(
-                        {
-                            'id': cid.value,
-                            'cid': str(cid),
-                            'name': q,
-                            'val': v[i],
-                            'idx': i
-                        }
-                    )
-        
+
         if req:
             for d in response['derived']:
                 i = http_sfv.Item()
