@@ -231,12 +231,13 @@ def parse_components(msg, req = False):
             # multiple values are undefined
             if len(v) == 1:
                 cid = http_sfv.Item('@query-param')
-                cid.params['name'] = q
+                name = quote(q.encode('utf-8')) # name is quoted version, after parsing
+                cid.params['name'] = name
                 response['derived'].append(
                     {
                         'id': cid.value,
                         'cid': str(cid),
-                        'name': q,
+                        'name': name,
                         'val': quote(v[0].encode('utf-8')) # value is the quoted version, after parsing
                     }
                 )
